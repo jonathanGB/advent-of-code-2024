@@ -87,32 +87,3 @@ fn main() {
         Day::Day25 { part } => Day25Solver::solve(part),
     }
 }
-
-// fn main() {
-//     for i in 1..=25 {
-//         let dir = format!("src/day{i}");
-//         std::fs::create_dir(&dir).expect(&format!("create directory at {dir}"));
-//         let input_path = format!("{dir}/input.txt");
-//         std::fs::File::create(&input_path).expect(&format!("create input at {input_path}"));
-//         let mod_path = format!("{dir}/mod.rs");
-//         let mod_content = format!(
-//             r#"use crate::solver::Solver;
-
-// pub struct Day{i}Solver {{}}
-
-// impl Solver for Day{i}Solver {{
-//     fn solve_part1() {{
-//         let _file = std::fs::read_to_string("{input_path}").unwrap();
-//     }}
-
-//     fn solve_part2() {{
-//         let _file = std::fs::read_to_string("{input_path}").unwrap();
-//     }}
-// }}
-// "#
-//         );
-
-//         std::fs::write(&mod_path, mod_content)
-//             .expect(&format!("write mod.rs content at {mod_path}"));
-//     }
-// }
