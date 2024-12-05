@@ -3,7 +3,7 @@ use crate::solver::Solver;
 // "MAS" is 3 characters long.
 const MAS_LENGTH: usize = 3;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Letter {
     X,
     M,
@@ -35,6 +35,36 @@ struct Position {
     col: usize,
 }
 
+impl Position {
+    fn up(&self, n: usize) -> Self {
+        Self {
+            row: self.row - n,
+            col: self.col,
+        }
+    }
+
+    fn right(&self, n: usize) -> Self {
+        Self {
+            row: self.row,
+            col: self.col + n,
+        }
+    }
+
+    fn down(&self, n: usize) -> Self {
+        Self {
+            row: self.row + n,
+            col: self.col,
+        }
+    }
+
+    fn left(&self, n: usize) -> Self {
+        Self {
+            row: self.row,
+            col: self.col - n,
+        }
+    }
+}
+
 impl Grid {
     fn new(file: &str) -> Self {
         let grid: Vec<_> = file
@@ -45,88 +75,87 @@ impl Grid {
         Self { grid, size }
     }
 
+    fn at(&self, position: Position) -> Letter {
+        self.grid[position.row][position.col]
+    }
+
     fn count_all_xmas_occurrences(&self) -> usize {
         let x_positions = self.find_all_letter_positions(Letter::X);
-        let grid = &self.grid;
         let mut xmax_occurences = 0;
 
-        for Position {
-            row: x_row,
-            col: x_col,
-        } in x_positions
-        {
+        for x_position in x_positions {
             // Try up.
-            if x_row >= MAS_LENGTH
-                && grid[x_row - 1][x_col] == Letter::M
-                && grid[x_row - 2][x_col] == Letter::A
-                && grid[x_row - 3][x_col] == Letter::S
+            if x_position.row >= MAS_LENGTH
+                && self.at(x_position.up(1)) == Letter::M
+                && self.at(x_position.up(2)) == Letter::A
+                && self.at(x_position.up(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try diagonal up-right.
-            if x_row >= MAS_LENGTH
-                && x_col < self.size - MAS_LENGTH
-                && grid[x_row - 1][x_col + 1] == Letter::M
-                && grid[x_row - 2][x_col + 2] == Letter::A
-                && grid[x_row - 3][x_col + 3] == Letter::S
+            if x_position.row >= MAS_LENGTH
+                && x_position.col < self.size - MAS_LENGTH
+                && self.at(x_position.up(1).right(1)) == Letter::M
+                && self.at(x_position.up(2).right(2)) == Letter::A
+                && self.at(x_position.up(3).right(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try right.
-            if x_col < self.size - MAS_LENGTH
-                && grid[x_row][x_col + 1] == Letter::M
-                && grid[x_row][x_col + 2] == Letter::A
-                && grid[x_row][x_col + 3] == Letter::S
+            if x_position.col < self.size - MAS_LENGTH
+                && self.at(x_position.right(1)) == Letter::M
+                && self.at(x_position.right(2)) == Letter::A
+                && self.at(x_position.right(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try diagonal down-right.
-            if x_row < self.size - MAS_LENGTH
-                && x_col < self.size - MAS_LENGTH
-                && grid[x_row + 1][x_col + 1] == Letter::M
-                && grid[x_row + 2][x_col + 2] == Letter::A
-                && grid[x_row + 3][x_col + 3] == Letter::S
+            if x_position.row < self.size - MAS_LENGTH
+                && x_position.col < self.size - MAS_LENGTH
+                && self.at(x_position.down(1).right(1)) == Letter::M
+                && self.at(x_position.down(2).right(2)) == Letter::A
+                && self.at(x_position.down(3).right(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try down.
-            if x_row < self.size - MAS_LENGTH
-                && grid[x_row + 1][x_col] == Letter::M
-                && grid[x_row + 2][x_col] == Letter::A
-                && grid[x_row + 3][x_col] == Letter::S
+            if x_position.row < self.size - MAS_LENGTH
+                && self.at(x_position.down(1)) == Letter::M
+                && self.at(x_position.down(2)) == Letter::A
+                && self.at(x_position.down(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try diagonal down-left.
-            if x_row < self.size - MAS_LENGTH
-                && x_col >= MAS_LENGTH
-                && grid[x_row + 1][x_col - 1] == Letter::M
-                && grid[x_row + 2][x_col - 2] == Letter::A
-                && grid[x_row + 3][x_col - 3] == Letter::S
+            if x_position.row < self.size - MAS_LENGTH
+                && x_position.col >= MAS_LENGTH
+                && self.at(x_position.down(1).left(1)) == Letter::M
+                && self.at(x_position.down(2).left(2)) == Letter::A
+                && self.at(x_position.down(3).left(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try left.
-            if x_col >= MAS_LENGTH
-                && grid[x_row][x_col - 1] == Letter::M
-                && grid[x_row][x_col - 2] == Letter::A
-                && grid[x_row][x_col - 3] == Letter::S
+            if x_position.col >= MAS_LENGTH
+                && self.at(x_position.left(1)) == Letter::M
+                && self.at(x_position.left(2)) == Letter::A
+                && self.at(x_position.left(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
 
             // Try diagonal up-left.
-            if x_row >= MAS_LENGTH
-                && x_col >= MAS_LENGTH
-                && grid[x_row - 1][x_col - 1] == Letter::M
-                && grid[x_row - 2][x_col - 2] == Letter::A
-                && grid[x_row - 3][x_col - 3] == Letter::S
+            if x_position.row >= MAS_LENGTH
+                && x_position.col >= MAS_LENGTH
+                && self.at(x_position.up(1).left(1)) == Letter::M
+                && self.at(x_position.up(2).left(2)) == Letter::A
+                && self.at(x_position.up(3).left(3)) == Letter::S
             {
                 xmax_occurences += 1;
             }
@@ -137,26 +166,25 @@ impl Grid {
 
     fn count_all_x_mas_occurrences(&self) -> usize {
         let a_positions = self.find_all_letter_positions(Letter::A);
-        let grid = &self.grid;
         let mut x_mas_occurrences = 0;
 
-        for Position {
-            row: a_row,
-            col: a_col,
-        } in a_positions
-        {
-            if a_row == 0 || a_col == self.size - 1 || a_row == self.size - 1 || a_col == 0 {
+        for a_position in a_positions {
+            if a_position.row == 0
+                || a_position.col == self.size - 1
+                || a_position.row == self.size - 1
+                || a_position.col == 0
+            {
                 continue;
             }
 
-            if ((grid[a_row - 1][a_col - 1] == Letter::M
-                && grid[a_row + 1][a_col + 1] == Letter::S)
-                || (grid[a_row - 1][a_col - 1] == Letter::S
-                    && grid[a_row + 1][a_col + 1] == Letter::M))
-                && ((grid[a_row + 1][a_col - 1] == Letter::M
-                    && grid[a_row - 1][a_col + 1] == Letter::S)
-                    || (grid[a_row + 1][a_col - 1] == Letter::S
-                        && grid[a_row - 1][a_col + 1] == Letter::M))
+            if ((self.at(a_position.up(1).left(1)) == Letter::M
+                && self.at(a_position.down(1).right(1)) == Letter::S)
+                || (self.at(a_position.up(1).left(1)) == Letter::S
+                    && self.at(a_position.down(1).right(1)) == Letter::M))
+                && ((self.at(a_position.down(1).left(1)) == Letter::M
+                    && self.at(a_position.up(1).right(1)) == Letter::S)
+                    || (self.at(a_position.down(1).left(1)) == Letter::S
+                        && self.at(a_position.up(1).right(1)) == Letter::M))
             {
                 x_mas_occurrences += 1;
             }
