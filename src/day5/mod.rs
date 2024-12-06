@@ -1,13 +1,13 @@
 use std::{
     collections::{HashMap, HashSet},
     num::ParseIntError,
-    ops::Deref,
+    ops::{Deref, DerefMut},
     str::{FromStr, Lines},
 };
 
 use crate::solver::Solver;
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
 struct Page(u16);
 
 impl FromStr for Page {
@@ -24,6 +24,104 @@ impl Deref for Page {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+#[derive(Default, Debug)]
+struct TopologicalPage {
+    // Set of pages that must be after this page
+    // (i.e. outgoing in a topological graph).
+    must_be_after_pages: HashSet<Page>,
+    // Num of pages in the setup that must be before this page
+    // (i.e. incoming in a topological graph).
+    num_must_be_before_pages: usize,
+}
+
+#[derive(Debug)]
+struct TopologicalPages {
+    topological_pages: HashMap<Page, TopologicalPage>,
+}
+
+impl Deref for TopologicalPages {
+    type Target = HashMap<Page, TopologicalPage>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.topological_pages
+    }
+}
+
+impl DerefMut for TopologicalPages {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.topological_pages
+    }
+}
+
+impl TopologicalPages {
+    fn new(ordering_rules: &OrderingRules, pages_of_interest: &HashSet<Page>) -> Self {
+        let mut topological_pages = HashMap::<Page, TopologicalPage>::default();
+
+        for page_of_interest in pages_of_interest {
+            // Check if the page of interest has rules regarding pages that must be present after.
+            // If not, nothing to do here.
+            // If so, only grab the ones that apply to this problem.
+            let must_be_after_pages = match ordering_rules.get(page_of_interest) {
+                Some(must_be_after_pages) => must_be_after_pages.intersection(pages_of_interest),
+                None => continue,
+            };
+
+            // Update the set of outgoing nodes (i.e. pages that must be after this one).
+            topological_pages
+                .entry(*page_of_interest)
+                .or_default()
+                .must_be_after_pages
+                .extend(must_be_after_pages.clone());
+
+            // Increment the counter of incoming edge to each outgoing node.
+            for must_be_after_page in must_be_after_pages {
+                topological_pages
+                    .entry(*must_be_after_page)
+                    .or_default()
+                    .num_must_be_before_pages += 1;
+            }
+        }
+
+        Self { topological_pages }
+    }
+
+    // Sorts topologically `pages` based on the `ordering_rules`.
+    // If `pages` was already sorted topologically, returns None.
+    // Otherwise, returns the topologically sorted list of pages.
+    fn sort_topologically(ordering_rules: &OrderingRules, pages: &[Page]) -> Option<Vec<Page>> {
+        let mut topological_pages = Self::new(ordering_rules, &pages.iter().cloned().collect());
+        let mut topologically_sorted_pages = Vec::new();
+
+        // Topological sorting is a loop that:
+        //   1. Finds the root of the sub-DAG, i.e. the node in a DAG with no incoming edges.
+        //   2. Pushes the root in the topologically sorted list.
+        //   3. Removes the root of the sub-DAG.
+        //   4. Decrements the counter of incoming edges for each node which the root connected to.
+        while !topological_pages.is_empty() {
+            let topological_root_page = *topological_pages
+                .iter()
+                .find(|(_, topological_page)| topological_page.num_must_be_before_pages == 0)
+                .unwrap()
+                .0;
+            topologically_sorted_pages.push(topological_root_page);
+            let topological_root_page = topological_pages.remove(&topological_root_page).unwrap();
+
+            for must_be_after_page in topological_root_page.must_be_after_pages {
+                topological_pages
+                    .get_mut(&must_be_after_page)
+                    .unwrap()
+                    .num_must_be_before_pages -= 1;
+            }
+        }
+
+        if pages == topologically_sorted_pages {
+            None
+        } else {
+            Some(topologically_sorted_pages)
+        }
     }
 }
 
@@ -74,49 +172,35 @@ impl Solver for SolverImpl {
         let ordering_rules = OrderingRules::new(&mut lines);
         let mut sum_middle_pages = 0;
 
-        'updates: for line in lines {
+        for line in lines {
             let pages: Vec<Page> = line.split(',').map(|page| page.parse().unwrap()).collect();
-            let middle_page = *pages[(pages.len() - 1) / 2];
 
-            let pages_by_position: HashMap<Page, usize> = pages
-                .into_iter()
-                .enumerate()
-                .map(|(i, page)| (page, i))
-                .collect();
-
-            for (page, page_position) in &pages_by_position {
-                // Check that the current page satisfies the ordering rules, meaning that it is
-                // present before the set of `before_pages`. If there is none, then there is no
-                // ordering rule for that page, so continue.
-                let before_pages = match ordering_rules.get(page) {
-                    Some(before_pages) => before_pages,
-                    None => continue,
-                };
-
-                for before_page in before_pages {
-                    // Find the position of a before page in the current update. If that position
-                    // is less than the current page, the update is invalid -- ignore it. If there
-                    // is no position, then that page is not present in this update, we can ignore
-                    // this rule.
-                    let before_page_position = match pages_by_position.get(before_page) {
-                        Some(before_page_position) => before_page_position,
-                        None => continue,
-                    };
-
-                    if page_position > before_page_position {
-                        continue 'updates;
-                    }
-                }
+            if TopologicalPages::sort_topologically(&ordering_rules, &pages).is_none() {
+                let middle_page = *pages[(pages.len() - 1) / 2];
+                sum_middle_pages += middle_page;
             }
-
-            sum_middle_pages += middle_page;
         }
 
         println!("The sum of valid middle pages is {sum_middle_pages}");
     }
 
     fn solve_part2(file: String) {
-        println!("{file}");
-        unimplemented!()
+        let mut lines = file.lines();
+        let ordering_rules = OrderingRules::new(&mut lines);
+        let mut sum_middle_pages = 0;
+
+        for line in lines {
+            let pages: Vec<Page> = line.split(',').map(|page| page.parse().unwrap()).collect();
+
+            if let Some(topologically_sorted_pages) =
+                TopologicalPages::sort_topologically(&ordering_rules, &pages)
+            {
+                let middle_page =
+                    *topologically_sorted_pages[(topologically_sorted_pages.len() - 1) / 2];
+                sum_middle_pages += middle_page;
+            }
+        }
+
+        println!("The sum of valid middle pages is {sum_middle_pages}");
     }
 }
