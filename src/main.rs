@@ -1,3 +1,6 @@
+#![feature(test)]
+extern crate test;
+
 use clap::Parser;
 use seq_macro::seq;
 

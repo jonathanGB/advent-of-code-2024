@@ -1,3 +1,5 @@
+use std::{collections::HashSet, sync::mpsc::channel};
+
 use crate::solver::Solver;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -37,13 +39,13 @@ impl Tile {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct Position {
     row: usize,
     col: usize,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 enum Direction {
     Up,
     Right,
@@ -51,7 +53,7 @@ enum Direction {
     Left,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 struct Guard {
     position: Position,
     direction: Direction,
@@ -60,13 +62,12 @@ struct Guard {
 impl Guard {
     // Moves the guard one tile following its patrol protocol.
     // That is, try to move one tile into the current direction. If the new tile is obstructed, rotate to the right,
-    // and try in that new direction. Panics if the tile to the right is obstructed.
-    // Returns the new position if it is inbounds. If the new position is outside (or if the starting
-    // position was already outside), returns None.
-    fn patrol(&mut self, lab: &Vec<Vec<Tile>>) -> Option<Position> {
+    // and try in that new direction. Stops there if the tile to the right is also obstructed.
+    // Returns true if the guard is still patrolling, aka it is not out of bounds. Otherwise, returns false.
+    fn patrol(&mut self, lab: &Vec<Vec<Tile>>) -> bool {
         let Position { row, col } = self.position;
         if lab[row][col].is_outside() {
-            return None;
+            return false;
         }
 
         let (new_position, (alternative_new_position, alternative_new_direction)) =
@@ -92,28 +93,31 @@ impl Guard {
         let new_tile = lab[new_position.row][new_position.col];
         let alternative_new_tile = lab[alternative_new_position.row][alternative_new_position.col];
         if new_tile.is_outside() {
-            None
+            false
         } else if !new_tile.is_obstructed() {
             self.position = new_position;
-            Some(new_position)
+            true
         } else if alternative_new_tile.is_outside() {
-            None
+            false
         } else if alternative_new_tile.is_obstructed() {
-            unreachable!()
+            // Obstructed twice. Give up for now, maybe we'll get out of here on a subsequent patrol.
+            self.direction = alternative_new_direction;
+            true
         } else {
             self.position = alternative_new_position;
             self.direction = alternative_new_direction;
-            Some(alternative_new_position)
+            true
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct LabSimulation {
     // Note that the lab is padded all around with "outside" tiles.
     lab: Vec<Vec<Tile>>,
     guard: Guard,
-    num_unique_visited_tiles: usize,
+    visited_tiles: HashSet<Position>,
+    previous_guards: HashSet<Guard>,
 }
 
 impl LabSimulation {
@@ -165,21 +169,38 @@ impl LabSimulation {
         Self {
             lab,
             guard,
-            num_unique_visited_tiles: 1,
+            visited_tiles: HashSet::from([position]),
+            previous_guards: HashSet::from([guard]),
         }
     }
 
-    // Runs the guard patrol, and returns the number of unique tiles
-    // visited by the guard after their exit from the lab.
-    fn run_guard_patrol(mut self) -> usize {
-        while let Some(Position { row, col }) = self.guard.patrol(&self.lab) {
-            if self.lab[row][col].is_unvisited() {
-                self.num_unique_visited_tiles += 1;
-                self.lab[row][col] = Tile::Visited;
+    fn at(&self, position: Position) -> &Tile {
+        &self.lab[position.row][position.col]
+    }
+
+    fn at_mut(&mut self, position: Position) -> &mut Tile {
+        &mut self.lab[position.row][position.col]
+    }
+
+    // Runs the guard patrol, and returns the set of tiles visited by the guard
+    // until it exited the lab. Returns None if the guard got stuck in a loop.
+    fn run_guard_patrol(mut self) -> Option<HashSet<Position>> {
+        while self.guard.patrol(&self.lab) {
+            let guard_position = self.guard.position;
+
+            if self.at(guard_position).is_unvisited() {
+                self.visited_tiles.insert(guard_position);
+                *self.at_mut(guard_position) = Tile::Visited;
+            } else if self.previous_guards.contains(&self.guard) {
+                // The guard has previously been at this position looking in
+                // the very same direction. This is a loop, exit!
+                return None;
             }
+
+            self.previous_guards.insert(self.guard);
         }
 
-        self.num_unique_visited_tiles
+        Some(self.visited_tiles)
     }
 }
 
@@ -188,15 +209,68 @@ pub struct SolverImpl {}
 impl Solver for SolverImpl {
     fn solve_part1(file: String) {
         let lab_simulation = LabSimulation::new(file);
-        let num_unique_visited_tiles = lab_simulation.run_guard_patrol();
+        let unique_visited_tiles = lab_simulation.run_guard_patrol().unwrap();
         println!(
             "The guard visited {} unique tiles.",
-            num_unique_visited_tiles
+            unique_visited_tiles.len()
         );
     }
 
     fn solve_part2(file: String) {
-        println!("{file}");
-        unimplemented!()
+        let lab_simulation = LabSimulation::new(file);
+        let initial_guard_position = lab_simulation.guard.position;
+        let mut potential_obstruction_sites = lab_simulation.clone().run_guard_patrol().unwrap();
+        // Problem states that the initial guard position cannot be a potential obstruction site.
+        potential_obstruction_sites.remove(&initial_guard_position);
+
+        // The problem has over 5k potential sites, so we will shard them uniformly across buckets based on the machine's
+        // available parallelism. Each shard will send their local count via the MPSC channel.
+        let (tx, rx) = channel();
+        let available_parallelism = std::thread::available_parallelism().unwrap().get();
+        let mut sharded_potential_obstruction_sites = vec![Vec::new(); available_parallelism];
+        for (i, potential_obstruction_site) in potential_obstruction_sites.into_iter().enumerate() {
+            sharded_potential_obstruction_sites[i % available_parallelism]
+                .push(potential_obstruction_site);
+        }
+
+        for sharded_potential_obstruction_site in sharded_potential_obstruction_sites {
+            let lab_simulation = lab_simulation.clone();
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                let mut sharded_count_loopable_configurations = 0;
+                for potential_obstruction_site in sharded_potential_obstruction_site {
+                    let mut tentative_lab_simulation = lab_simulation.clone();
+                    *tentative_lab_simulation.at_mut(potential_obstruction_site) = Tile::Obstructed;
+
+                    if tentative_lab_simulation.run_guard_patrol().is_none() {
+                        sharded_count_loopable_configurations += 1;
+                    }
+                }
+
+                tx.send(sharded_count_loopable_configurations).unwrap();
+            });
+        }
+
+        let mut count_loopable_configurations = 0;
+        for _ in 0..available_parallelism {
+            count_loopable_configurations += rx.recv().unwrap();
+        }
+
+        println!(
+            "We could find {count_loopable_configurations} configurations that resulted in a loop."
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::Bencher;
+
+    #[bench]
+    fn bench_part2(b: &mut Bencher) {
+        let file = std::fs::read_to_string("src/day6/input.txt").unwrap();
+
+        b.iter(|| SolverImpl::solve_part2(file.clone()));
     }
 }
