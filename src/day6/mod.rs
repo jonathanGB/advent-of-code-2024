@@ -1,6 +1,6 @@
-use std::{collections::HashSet, sync::mpsc::channel};
-
 use crate::solver::Solver;
+use hashbrown::HashSet;
+use std::sync::mpsc::channel;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Tile {
