@@ -1,4 +1,5 @@
 use crate::solver::Solver;
+use crate::utils::Position;
 
 // "MAS" is 3 characters long.
 const MAS_LENGTH: usize = 3;
@@ -28,44 +29,6 @@ struct Grid {
     grid: Vec<Vec<Letter>>,
     // The grid is a square of size `size`.
     size: usize,
-}
-
-struct Position {
-    row: usize,
-    col: usize,
-}
-
-impl Position {
-    // Note that all of these Position helpers assume that the operation is valid.
-    // That is, one should not call `up` on a (0,0) position, as (-1,0) is out of bounds.
-
-    fn up(&self, n: usize) -> Self {
-        Self {
-            row: self.row - n,
-            col: self.col,
-        }
-    }
-
-    fn right(&self, n: usize) -> Self {
-        Self {
-            row: self.row,
-            col: self.col + n,
-        }
-    }
-
-    fn down(&self, n: usize) -> Self {
-        Self {
-            row: self.row + n,
-            col: self.col,
-        }
-    }
-
-    fn left(&self, n: usize) -> Self {
-        Self {
-            row: self.row,
-            col: self.col - n,
-        }
-    }
 }
 
 impl Grid {

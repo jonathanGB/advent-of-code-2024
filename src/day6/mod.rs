@@ -1,4 +1,5 @@
 use crate::solver::Solver;
+use crate::utils::Position;
 use hashbrown::HashSet;
 use std::sync::mpsc::channel;
 
@@ -37,12 +38,6 @@ impl Tile {
     fn is_outside(&self) -> bool {
         self == &Self::Outside
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-struct Position {
-    row: usize,
-    col: usize,
 }
 
 #[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]

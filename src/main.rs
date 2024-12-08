@@ -31,6 +31,7 @@ mod day7;
 mod day8;
 mod day9;
 mod solver;
+mod utils;
 
 use args::{Args, Day};
 use solver::Solver;
