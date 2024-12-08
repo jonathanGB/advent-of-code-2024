@@ -268,7 +268,7 @@ mod tests {
     use test::Bencher;
 
     #[bench]
-    fn bench_part2(b: &mut Bencher) {
+    fn bench_day6_part2(b: &mut Bencher) {
         let file = std::fs::read_to_string("src/day6/input.txt").unwrap();
 
         b.iter(|| SolverImpl::solve_part2(file.clone()));
