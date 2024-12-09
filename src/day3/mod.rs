@@ -11,7 +11,7 @@ lazy_static! {
 pub struct SolverImpl {}
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         let sum_of_muls: i32 = MUL
             .captures_iter(&file)
             .map(|capture| {
@@ -23,7 +23,7 @@ impl Solver for SolverImpl {
         println!("Sum of muls: {sum_of_muls}");
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         let mut enabled = true;
         let sum_of_muls: i32 = MUL_WITH_DO_DONT
             .captures_iter(&file)

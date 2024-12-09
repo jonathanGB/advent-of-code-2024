@@ -167,7 +167,7 @@ impl OrderingRules {
 pub struct SolverImpl {}
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         let mut lines = file.lines();
         let ordering_rules = OrderingRules::new(&mut lines);
         let mut sum_middle_pages = 0;
@@ -184,7 +184,7 @@ impl Solver for SolverImpl {
         println!("The sum of valid middle pages is {sum_middle_pages}");
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         let mut lines = file.lines();
         let ordering_rules = OrderingRules::new(&mut lines);
         let mut sum_middle_pages = 0;

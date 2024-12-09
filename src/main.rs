@@ -45,7 +45,7 @@ fn main() {
                 Day::Day~N {part, input} => {
                     let path = format!("src/day{}/{}.txt", N, input);
                     match std::fs::read_to_string(&path) {
-                        Ok(file_content) => day~N::SolverImpl::solve(part, file_content),
+                        Ok(file_content) => day~N::SolverImpl::solve(part, &file_content),
                         Err(e) => panic!("Could not read content of file {}, err: {}", path, e),
                     };
                 },

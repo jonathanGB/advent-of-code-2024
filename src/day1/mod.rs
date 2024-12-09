@@ -5,7 +5,7 @@ use crate::solver::Solver;
 pub struct SolverImpl {}
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         let (mut location_ids_a, mut location_ids_b): (Vec<_>, Vec<_>) = file
             .lines()
             .map(|line| {
@@ -29,7 +29,7 @@ impl Solver for SolverImpl {
         println!("Total is {total}");
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         let (location_ids_a, location_ids_b): (Vec<_>, Vec<_>) = file
             .lines()
             .map(|line| {

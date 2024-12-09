@@ -68,7 +68,7 @@ impl FromStr for Equation {
 pub struct SolverImpl {}
 
 impl SolverImpl {
-    fn solve<I>(file: String, operators: I)
+    fn solve<I>(file: &str, operators: I)
     where
         I: Iterator<Item = Operator> + Clone + Send + 'static,
     {
@@ -116,14 +116,14 @@ impl SolverImpl {
 }
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         Self::solve(
             file,
             Operator::iter().filter(|operator| !operator.is_concatenation()),
         );
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         Self::solve(file, Operator::iter());
     }
 }
@@ -137,13 +137,13 @@ mod tests {
     fn bench_day7_part1(b: &mut Bencher) {
         let file = std::fs::read_to_string("src/day7/input.txt").unwrap();
 
-        b.iter(|| SolverImpl::solve_part1(file.clone()));
+        b.iter(|| SolverImpl::solve_part1(&file));
     }
 
     #[bench]
     fn bench_day7_part2(b: &mut Bencher) {
         let file = std::fs::read_to_string("src/day7/input.txt").unwrap();
 
-        b.iter(|| SolverImpl::solve_part2(file.clone()));
+        b.iter(|| SolverImpl::solve_part2(&file));
     }
 }

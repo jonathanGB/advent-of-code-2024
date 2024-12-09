@@ -116,7 +116,7 @@ struct LabSimulation {
 }
 
 impl LabSimulation {
-    fn new(file: String) -> Self {
+    fn new(file: &str) -> Self {
         let mut lab = Vec::new();
         let mut guard_position = None;
 
@@ -202,7 +202,7 @@ impl LabSimulation {
 pub struct SolverImpl {}
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         let lab_simulation = LabSimulation::new(file);
         let unique_visited_tiles = lab_simulation.run_guard_patrol().unwrap();
         println!(
@@ -211,7 +211,7 @@ impl Solver for SolverImpl {
         );
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         let lab_simulation = LabSimulation::new(file);
         let initial_guard_position = lab_simulation.guard.position;
         let mut potential_obstruction_sites = lab_simulation.clone().run_guard_patrol().unwrap();
@@ -266,6 +266,6 @@ mod tests {
     fn bench_day6_part2(b: &mut Bencher) {
         let file = std::fs::read_to_string("src/day6/input.txt").unwrap();
 
-        b.iter(|| SolverImpl::solve_part2(file.clone()));
+        b.iter(|| SolverImpl::solve_part2(&file));
     }
 }

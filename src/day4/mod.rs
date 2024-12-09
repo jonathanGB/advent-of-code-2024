@@ -177,12 +177,12 @@ impl Grid {
 pub struct SolverImpl {}
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         let grid = Grid::new(&file);
         println!("XMAS appeared {} times.", grid.count_all_xmas_occurrences());
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         let grid = Grid::new(&file);
         println!(
             "X-MAS appeared {} times.",

@@ -14,7 +14,7 @@ impl SolverImpl {
 }
 
 impl Solver for SolverImpl {
-    fn solve_part1(file: String) {
+    fn solve_part1(file: &str) {
         let mut num_safe_reports = 0;
 
         for line in file.lines() {
@@ -31,7 +31,7 @@ impl Solver for SolverImpl {
         println!("Number of safe reports: {num_safe_reports}");
     }
 
-    fn solve_part2(file: String) {
+    fn solve_part2(file: &str) {
         let mut num_safe_reports = 0;
 
         for line in file.lines() {
