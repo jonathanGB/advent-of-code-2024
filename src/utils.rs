@@ -1,8 +1,18 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Position {
-    pub row: usize,
-    pub col: usize,
+pub struct Position<T = usize> {
+    pub row: T,
+    pub col: T,
 }
+
+macro_rules! pos {
+    ($row:expr, $col:expr) => {
+        Position {
+            row: $row,
+            col: $col,
+        }
+    };
+}
+pub(crate) use pos;
 
 impl Position {
     // Note that all of these Position helpers assume that the operation is valid.
