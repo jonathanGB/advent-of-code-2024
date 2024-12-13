@@ -1,7 +1,6 @@
 use crate::solver::Solver;
-use crate::utils::Position;
+use crate::utils::{Position, shard_and_solve_concurrently};
 use hashbrown::HashSet;
-use std::sync::mpsc::channel;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Tile {
@@ -218,38 +217,24 @@ impl Solver for SolverImpl {
         // Problem states that the initial guard position cannot be a potential obstruction site.
         potential_obstruction_sites.remove(&initial_guard_position);
 
-        // The problem has over 5k potential sites, so we will shard them uniformly across buckets based on the machine's
-        // available parallelism. Each shard will send their local count via the MPSC channel.
-        let (tx, rx) = channel();
-        let available_parallelism = std::thread::available_parallelism().unwrap().get();
-        let mut sharded_potential_obstruction_sites = vec![Vec::new(); available_parallelism];
-        for (i, potential_obstruction_site) in potential_obstruction_sites.into_iter().enumerate() {
-            sharded_potential_obstruction_sites[i % available_parallelism]
-                .push(potential_obstruction_site);
-        }
-
-        for sharded_potential_obstruction_site in sharded_potential_obstruction_sites {
-            let lab_simulation = lab_simulation.clone();
-            let tx = tx.clone();
-            std::thread::spawn(move || {
-                let mut sharded_count_loopable_configurations = 0;
-                for potential_obstruction_site in sharded_potential_obstruction_site {
+        let count_loopable_configurations = shard_and_solve_concurrently(
+            potential_obstruction_sites,
+            lab_simulation,
+            |potential_obstruction_sites, lab_simulation| {
+                let mut count_loopable_configurations = 0;
+                for potential_obstruction_site in potential_obstruction_sites {
                     let mut tentative_lab_simulation = lab_simulation.clone();
                     *tentative_lab_simulation.at_mut(potential_obstruction_site) = Tile::Obstructed;
 
                     if tentative_lab_simulation.run_guard_patrol().is_none() {
-                        sharded_count_loopable_configurations += 1;
+                        count_loopable_configurations += 1;
                     }
                 }
 
-                tx.send(sharded_count_loopable_configurations).unwrap();
-            });
-        }
-
-        let mut count_loopable_configurations = 0;
-        for _ in 0..available_parallelism {
-            count_loopable_configurations += rx.recv().unwrap();
-        }
+                count_loopable_configurations
+            },
+        )
+        .sum::<i32>();
 
         println!(
             "We could find {count_loopable_configurations} configurations that resulted in a loop."

@@ -1,4 +1,5 @@
-use std::{str::FromStr, sync::mpsc::channel};
+use crate::utils::shard_and_solve_concurrently;
+use std::str::FromStr;
 
 use anyhow::anyhow;
 use itertools::Itertools;
@@ -72,21 +73,13 @@ impl SolverImpl {
     where
         I: Iterator<Item = Operator> + Clone + Send + 'static,
     {
-        let (tx, rx) = channel();
-        let available_parallelism = std::thread::available_parallelism().unwrap().get();
-        let mut sharded_lines = vec![Vec::new(); available_parallelism];
-        for (i, line) in file.lines().enumerate() {
-            sharded_lines[i % available_parallelism].push(line.to_string());
-        }
+        let total_calibration_result = shard_and_solve_concurrently(
+            file.lines().map(|line| line.to_string()),
+            operators,
+            |lines, operators| {
+                let mut total_calibration_result = 0;
 
-        for sharded_line in sharded_lines {
-            let tx = tx.clone();
-            let operators = operators.clone();
-
-            std::thread::spawn(move || {
-                let mut local_total_calibration_result = 0;
-
-                'equations: for line in sharded_line {
+                'equations: for line in lines {
                     let equation: Equation = line.parse().unwrap();
                     let num_operators = equation.operands.len() - 1;
 
@@ -95,21 +88,16 @@ impl SolverImpl {
                         .multi_cartesian_product()
                     {
                         if equation.try_compute(tentative_operators).is_some() {
-                            local_total_calibration_result += equation.value;
+                            total_calibration_result += equation.value;
                             continue 'equations;
                         }
                     }
                 }
 
-                tx.send(local_total_calibration_result).unwrap();
-            });
-        }
-
-        let mut total_calibration_result = 0;
-
-        for _ in 0..available_parallelism {
-            total_calibration_result += rx.recv().unwrap();
-        }
+                total_calibration_result
+            },
+        )
+        .sum::<i64>();
 
         println!("The total calibration result is {total_calibration_result}");
     }

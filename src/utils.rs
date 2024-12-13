@@ -1,3 +1,5 @@
+use std::sync::mpsc::channel;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Position<T = usize> {
     pub row: T,
@@ -45,4 +47,38 @@ impl Position {
             col: self.col - n,
         }
     }
+}
+
+/// Shards `inputs` uniformly, and runs `f` on one shard per thread, based on the available parallelism of the machine.
+/// If `f` requires to use elements captured from the context, this can be passed via the generic `capture` argument.
+/// Ultimately, this returns an iterator over the output from each shard.
+pub fn shard_and_solve_concurrently<Is, I, C, F, O>(
+    inputs: Is,
+    capture: C,
+    f: F,
+) -> std::sync::mpsc::IntoIter<O>
+where
+    Is: IntoIterator<Item = I>,
+    I: Clone + Send + 'static,
+    C: Clone + Send + 'static,
+    F: FnOnce(Vec<I>, C) -> O + Clone + Send + 'static,
+    O: Send + 'static,
+{
+    let (tx, rx) = channel();
+    let available_parallelism = std::thread::available_parallelism().unwrap().get();
+    let mut shards = vec![Vec::new(); available_parallelism];
+    for (i, input) in inputs.into_iter().enumerate() {
+        shards[i % available_parallelism].push(input);
+    }
+
+    for shard in shards {
+        let capture = capture.clone();
+        let f = f.clone();
+        let tx = tx.clone();
+        std::thread::spawn(move || {
+            tx.send(f(shard, capture)).unwrap();
+        });
+    }
+
+    rx.into_iter()
 }
