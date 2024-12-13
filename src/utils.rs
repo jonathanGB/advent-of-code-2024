@@ -52,6 +52,8 @@ impl Position {
 /// Shards `inputs` uniformly, and runs `f` on one shard per thread, based on the available parallelism of the machine.
 /// If `f` requires to use elements captured from the context, this can be passed via the generic `capture` argument.
 /// Ultimately, this returns an iterator over the output from each shard.
+/// Using this helper only makes sense if `f` takes a substantial amount of time to run, otherwise the cost of sharding
+/// and spawning threads will outweigh possible runtime gains.
 pub fn shard_and_solve_concurrently<Is, I, C, F, O>(
     inputs: Is,
     capture: C,
