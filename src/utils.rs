@@ -59,14 +59,14 @@ pub fn shard_and_solve_concurrently<Is, I, C, F, O>(
 ) -> std::sync::mpsc::IntoIter<O>
 where
     Is: IntoIterator<Item = I>,
-    I: Clone + Send + 'static,
+    I: Send + 'static,
     C: Clone + Send + 'static,
     F: FnOnce(Vec<I>, C) -> O + Clone + Send + 'static,
     O: Send + 'static,
 {
     let (tx, rx) = channel();
     let available_parallelism = std::thread::available_parallelism().unwrap().get();
-    let mut shards = vec![Vec::new(); available_parallelism];
+    let mut shards: Vec<_> = (0..available_parallelism).map(|_| Vec::new()).collect();
     for (i, input) in inputs.into_iter().enumerate() {
         shards[i % available_parallelism].push(input);
     }
