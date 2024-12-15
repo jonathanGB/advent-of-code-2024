@@ -1,5 +1,5 @@
 use crate::solver::Solver;
-use crate::utils::{Position, shard_and_solve_concurrently};
+use crate::utils::{Position, generate_benchmark, shard_and_solve_concurrently};
 use hashbrown::HashSet;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -242,15 +242,4 @@ impl Solver for SolverImpl {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_day6_part2(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day6/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part2(&file));
-    }
-}
+generate_benchmark!(day6);

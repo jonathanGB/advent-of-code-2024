@@ -5,7 +5,7 @@ use std::{
     str::{FromStr, Lines},
 };
 
-use crate::solver::Solver;
+use crate::{solver::Solver, utils::generate_benchmark};
 
 #[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
 struct Page(u16);
@@ -204,3 +204,5 @@ impl Solver for SolverImpl {
         println!("The sum of valid middle pages is {sum_middle_pages}");
     }
 }
+
+generate_benchmark!(day5);

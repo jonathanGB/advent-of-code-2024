@@ -1,5 +1,5 @@
 use crate::solver::Solver;
-use crate::utils::Position;
+use crate::utils::{Position, generate_benchmark};
 
 // "MAS" is 3 characters long.
 const MAS_LENGTH: usize = 3;
@@ -190,3 +190,5 @@ impl Solver for SolverImpl {
         );
     }
 }
+
+generate_benchmark!(day4);

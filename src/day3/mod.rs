@@ -1,4 +1,4 @@
-use crate::solver::Solver;
+use crate::{solver::Solver, utils::generate_benchmark};
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -46,3 +46,5 @@ impl Solver for SolverImpl {
         println!("Sum of muls: {sum_of_muls}");
     }
 }
+
+generate_benchmark!(day3);

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::solver::Solver;
+use crate::{solver::Solver, utils::generate_benchmark};
 
 pub struct SolverImpl {}
 
@@ -66,3 +66,5 @@ impl Solver for SolverImpl {
         println!("Total is {total}");
     }
 }
+
+generate_benchmark!(day1);

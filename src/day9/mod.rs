@@ -1,6 +1,6 @@
 use std::{cmp::Reverse, collections::BinaryHeap};
 
-use crate::solver::Solver;
+use crate::{solver::Solver, utils::generate_benchmark};
 
 macro_rules! offset_based_ord_and_eq {
     ($T:ident) => {
@@ -258,22 +258,4 @@ impl Solver for SolverImpl {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_day9_part1(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day9/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part1(&file));
-    }
-
-    #[bench]
-    fn bench_day9_part2(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day9/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part2(&file));
-    }
-}
+generate_benchmark!(day9);

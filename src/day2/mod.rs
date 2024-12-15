@@ -1,4 +1,4 @@
-use crate::solver::Solver;
+use crate::{solver::Solver, utils::generate_benchmark};
 
 pub struct SolverImpl {}
 
@@ -56,3 +56,5 @@ impl Solver for SolverImpl {
         println!("Number of safe reports: {num_safe_reports}");
     }
 }
+
+generate_benchmark!(day2);

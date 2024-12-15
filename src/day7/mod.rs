@@ -1,4 +1,4 @@
-use crate::utils::shard_and_solve_concurrently;
+use crate::utils::{generate_benchmark, shard_and_solve_concurrently};
 use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -116,22 +116,4 @@ impl Solver for SolverImpl {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_day7_part1(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day7/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part1(&file));
-    }
-
-    #[bench]
-    fn bench_day7_part2(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day7/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part2(&file));
-    }
-}
+generate_benchmark!(day7);

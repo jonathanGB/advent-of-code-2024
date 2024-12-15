@@ -1,5 +1,5 @@
-use crate::solver::Solver;
 use crate::utils::pos;
+use crate::{solver::Solver, utils::generate_benchmark};
 use hashbrown::{HashMap, HashSet};
 use itertools::Itertools;
 
@@ -120,22 +120,4 @@ impl Solver for SolverImpl {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_day8_part1(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day8/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part1(&file));
-    }
-
-    #[bench]
-    fn bench_day8_part2(b: &mut Bencher) {
-        let file = std::fs::read_to_string("src/day8/input.txt").unwrap();
-
-        b.iter(|| SolverImpl::solve_part2(&file));
-    }
-}
+generate_benchmark!(day8);
