@@ -76,6 +76,10 @@ impl Position {
             col: self.col - n,
         }
     }
+
+    pub fn surroundings(&self) -> Vec<Self> {
+        vec![self.up(1), self.right(1), self.down(1), self.left(1)]
+    }
 }
 
 /// Shards `inputs` uniformly, and runs `f` on one shard per thread, based on the available parallelism of the machine.
