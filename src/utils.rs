@@ -16,6 +16,35 @@ macro_rules! pos {
 }
 pub(crate) use pos;
 
+macro_rules! generate_benchmark {
+    ($day:ident) => {
+        use paste::paste;
+
+        paste! {
+            #[cfg(test)]
+            mod tests {
+                use super::*;
+                use test::Bencher;
+
+                #[bench]
+                fn [<bench_ $day _part1>](b: &mut Bencher) {
+                    let file = std::fs::read_to_string(concat!("src/", stringify!($day), "/input.txt")).unwrap();
+
+                    b.iter(|| SolverImpl::solve_part1(&file));
+                }
+
+                #[bench]
+                fn [<bench_ $day _part2>](b: &mut Bencher) {
+                    let file = std::fs::read_to_string(concat!("src/", stringify!($day), "/input.txt")).unwrap();
+
+                    b.iter(|| SolverImpl::solve_part2(&file));
+                }
+            }
+        }
+    };
+}
+pub(crate) use generate_benchmark;
+
 impl Position {
     // Note that all of these Position helpers assume that the operation is valid.
     // That is, one should not call `up` on a (0,0) position, as (-1,0) is out of bounds.
