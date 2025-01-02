@@ -80,6 +80,41 @@ impl Position {
     pub fn surroundings(&self) -> Vec<Self> {
         vec![self.up(1), self.right(1), self.down(1), self.left(1)]
     }
+
+    pub fn go(&self, direction: Direction) -> Self {
+        match direction {
+            Direction::Up => self.up(1),
+            Direction::Right => self.right(1),
+            Direction::Down => self.down(1),
+            Direction::Left => self.left(1),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+}
+
+impl Direction {
+    pub fn sideways(&self) -> bool {
+        *self == Self::Right || *self == Self::Left
+    }
+}
+
+impl From<char> for Direction {
+    fn from(value: char) -> Self {
+        match value {
+            '^' => Self::Up,
+            '>' => Self::Right,
+            'v' => Self::Down,
+            '<' => Self::Left,
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Shards `inputs` uniformly, and runs `f` on one shard per thread, based on the available parallelism of the machine.
