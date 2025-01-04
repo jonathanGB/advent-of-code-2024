@@ -91,7 +91,7 @@ impl Position {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Direction {
     Up,
     Right,
@@ -102,6 +102,24 @@ pub enum Direction {
 impl Direction {
     pub fn sideways(&self) -> bool {
         *self == Self::Right || *self == Self::Left
+    }
+
+    pub fn turn_clockwise(&self) -> Direction {
+        match *self {
+            Self::Up => Self::Right,
+            Self::Right => Self::Down,
+            Self::Down => Self::Left,
+            Self::Left => Self::Up,
+        }
+    }
+
+    pub fn turn_counter_clockwise(&self) -> Direction {
+        match *self {
+            Self::Up => Self::Left,
+            Self::Right => Self::Up,
+            Self::Down => Self::Right,
+            Self::Left => Self::Down,
+        }
     }
 }
 
