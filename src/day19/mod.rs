@@ -1,10 +1,8 @@
 use strum::EnumCount;
 use strum_macros::EnumCount;
 
-use crate::{
-    solver::Solver,
-    utils::{Trie, TrieElement, generate_benchmark},
-};
+use crate::trie::{Trie, TrieElement};
+use crate::{solver::Solver, utils::generate_benchmark};
 
 #[derive(Clone, Copy, Debug, PartialEq, EnumCount)]
 enum Stripe {
