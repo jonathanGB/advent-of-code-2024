@@ -151,15 +151,60 @@ impl MemorySpace {
     // Returns the normalized position (i.e. ignoring outside padding) of the byte
     // that partitions the start and exit tiles (i.e. cannot be reached).
     fn find_first_partition_byte(&mut self) -> Position {
-        for Position { row, col } in &self.remaining_corrupted_bytes {
-            self.grid[*row][*col] = Tile::Corrupted;
+        // We effectively use binary search to find the corrupt byte that partitions the start
+        // and exit tiles. Contrarily to a normal binary search, we are not searching for an entry,
+        // but rather the boundary between entries at which point we go from a non-partitioned space to a
+        // partitioned space. Therefore, we will always reach the point where the `lo` index
+        // equals the `hi` index.
+        //
+        // Another peculiarity is that after each check, we must update the set of corrupted tiles
+        // in the grid.
+        let mut lo = 0;
+        let mut hi = self.remaining_corrupted_bytes.len() - 1;
+        let mut mi = (lo + hi) / 2;
 
-            if self.find_shortest_exit_path_len().is_none() {
-                return pos!(row - 1, col - 1);
-            }
+        // Start by setting the first half of remaining bytes (including `mi`) as corrupted on the grid.
+        for i in lo..=mi {
+            let Position { row, col } = self.remaining_corrupted_bytes[i];
+            self.grid[row][col] = Tile::Corrupted;
         }
 
-        unreachable!("Couldn't partition the start and end positions")
+        loop {
+            match self.find_shortest_exit_path_len() {
+                // If setting all remaining bytes up to `lo|hi` resolves a shortest exit path,
+                // then we have found the partition point to be the following byte.
+                Some(_) if lo == hi => {
+                    return self.remaining_corrupted_bytes[lo + 1];
+                }
+                // We have found an exit path, so more bytes must be corrupted to partition the
+                // exit space.
+                Some(_) => {
+                    lo = mi + 1;
+                    mi = (lo + hi) / 2;
+
+                    for i in lo..=mi {
+                        let Position { row, col } = self.remaining_corrupted_bytes[i];
+                        self.grid[row][col] = Tile::Corrupted;
+                    }
+                }
+                // If setting all remaining bytes up to `lo|hi` does not resolve a shortest exit path,
+                // then we have found the partition point to be this exact byte.
+                None if lo == hi => {
+                    return self.remaining_corrupted_bytes[lo];
+                }
+                // We have not found an exit path, so fewer bytes must be corrupted to partition the
+                // exit space.
+                None => {
+                    hi = mi - 1;
+                    mi = (lo + hi) / 2;
+
+                    for i in mi + 1..=hi + 1 {
+                        let Position { row, col } = self.remaining_corrupted_bytes[i];
+                        self.grid[row][col] = Tile::Safe;
+                    }
+                }
+            }
+        }
     }
 }
 
